@@ -1,5 +1,5 @@
 
-from dataclasses import asdict, dataclass, fields
+from dataclasses import asdict, dataclass
 
 
 @dataclass
@@ -30,7 +30,7 @@ class Training:
     weight: float
     LEN_STEP = 0.65
     M_IN_KM = 1000
-    MINUTES_IN_HOUR = 60
+    MIN_IN_HOUR = 60
 
     def get_distance(self) -> float:
         """Получить дистанцию в км."""
@@ -46,7 +46,7 @@ class Training:
 
     def get_duration_in_minutes(self) -> float:
         """Получить время в минутах"""
-        return self.duration * self.MINUTES_IN_HOUR
+        return self.duration * self.MIN_IN_HOUR
 
     def show_training_info(self) -> InfoMessage:
         """Вернуть информационное сообщение о выполненной тренировке."""
@@ -62,16 +62,16 @@ class Training:
 @dataclass
 class Running(Training):
     """Тренировка: бег."""
-    MULTIPLIER_MEAN_SPEED = 18
-    SUBTRAHEND_MEAN_SPEED = 20
+    SPEED_MULTIPLIER = 18
+    SPEED_SUBTRAHEND = 20
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий при беге."""
 
         return (
             (
-                self.MULTIPLIER_MEAN_SPEED * self.get_mean_speed()
-                - self.SUBTRAHEND_MEAN_SPEED
+                self.SPEED_MULTIPLIER * self.get_mean_speed()
+                - self.SPEED_SUBTRAHEND
             )
             * self.weight / self.M_IN_KM * self.get_duration_in_minutes()
         )
@@ -80,20 +80,17 @@ class Running(Training):
 @dataclass
 class SportsWalking(Training):
     """Тренировка: спортивная ходьба."""
-    action: int
-    duration: float
-    weight: float
     height: float
-    MULTIPLIER_WEIGHT = 0.035
-    MULTIPLIER_DURATION = 0.029
+    WEIGHT_MULTIPLIER_1 = 0.035
+    WEIGHT_MULTIPLIER_2 = 0.029
 
     def get_spent_calories(self) -> float:
         """Получить количество затраченных калорий при ходьбе."""
         return (
             (
-                self.MULTIPLIER_WEIGHT * self.weight
+                self.WEIGHT_MULTIPLIER_1 * self.weight
                 + (self.get_mean_speed() ** 2 // self.height)
-                * self.MULTIPLIER_DURATION * self.weight
+                * self.WEIGHT_MULTIPLIER_2 * self.weight
             )
             * self.get_duration_in_minutes()
         )
@@ -103,12 +100,9 @@ class SportsWalking(Training):
 class Swimming(Training):
     """Тренировка: плавание."""
     LEN_STEP = 1.38
-    action: int
-    duration: float
-    weight: float
     length_pool: float
     count_pool: int
-    ADDEND_MEAN_SPEED = 1.1
+    SPEED_ADDEND = 1.1
     MULTIPLIER_WEIGHT = 2
 
     def get_mean_speed(self) -> float:
@@ -122,26 +116,34 @@ class Swimming(Training):
         """Получить количество затраченных калорий при плавании."""
         return (
             (
-                self.get_mean_speed() + self.ADDEND_MEAN_SPEED
+                self.get_mean_speed() + self.SPEED_ADDEND
             )
             * self.MULTIPLIER_WEIGHT * self.weight
         )
 
 
+DATA = {
+    'SWM': (Swimming, 5),
+    'RUN': (Running, 3),
+    'WLK': (SportsWalking, 4)
+}
+
+# честно пытался понять комментарии по этой функции
+# понял, что нужно применить guard block
+# понял, что нужно бросать исключения, которые конкретно опысывают проблему
+# а вот какие важные детали нужно включать, пока не понимаю
+
+
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
-    data_dict = {
-        'SWM': Swimming,
-        'RUN': Running,
-        'WLK': SportsWalking
-    }
-    if workout_type in data_dict:
-        if len(data) == len(fields(data_dict[workout_type])):
-            return data_dict[workout_type](*data)
-        else:
-            raise Exception('количество параметров тренировки не совпадает')
+    if workout_type not in DATA:
+        raise KeyError('нет такого типа тренировки')
     else:
-        raise Exception('нет такого типа тренировки')
+        training = DATA[workout_type]
+        if training[1] != len(data):
+            raise TypeError('количество параметров тренировки не совпадает')
+        else:
+            return training[0](*data)
 
 
 def main(training: Training) -> None:
@@ -155,6 +157,5 @@ if __name__ == '__main__':
         ('RUN', [15000, 1, 75]),
         ('WLK', [9000, 1, 75, 180]),
     ]
-
     for workout_type, data in packages:
         main(read_package(workout_type, data))
