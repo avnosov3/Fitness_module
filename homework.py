@@ -141,7 +141,7 @@ def read_package(workout_type: str, data: list) -> Training:
         raise ValueError(TRAINING_TYPE.format(workout_type))
     training, values = DATA[workout_type]
     if values != len(data):
-        raise TypeError(NUM_VALUES.format(workout_type, len(data), values))
+        raise ValueError(NUM_VALUES.format(workout_type, len(data), values))
     return training(*data)
 
 
