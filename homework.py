@@ -103,7 +103,7 @@ class Swimming(Training):
     length_pool: float
     count_pool: int
     SPEED_ADDEND = 1.1
-    MULTIPLIER_WEIGHT = 2
+    WEIGHT_MULTIPLIER = 2
 
     def get_mean_speed(self) -> float:
         """Получить среднюю скорость движения в бассейне."""
@@ -118,7 +118,7 @@ class Swimming(Training):
             (
                 self.get_mean_speed() + self.SPEED_ADDEND
             )
-            * self.MULTIPLIER_WEIGHT * self.weight
+            * self.WEIGHT_MULTIPLIER * self.weight
         )
 
 
@@ -128,22 +128,21 @@ DATA = {
     'WLK': (SportsWalking, 4)
 }
 
-# честно пытался понять комментарии по этой функции
-# понял, что нужно применить guard block
-# понял, что нужно бросать исключения, которые конкретно опысывают проблему
-# а вот какие важные детали нужно включать, пока не понимаю
+TRAINING_TYPE = 'Датчик передал неверный вид тренировки "{}".'
+NUM_VALUES = (
+    'Датчик передал неверное количество показателей '
+    'тренировки "{}" - "{}" вместо "{}".'
+)
 
 
 def read_package(workout_type: str, data: list) -> Training:
     """Прочитать данные полученные от датчиков."""
     if workout_type not in DATA:
-        raise KeyError('нет такого типа тренировки')
-    else:
-        training = DATA[workout_type]
-        if training[1] != len(data):
-            raise TypeError('количество параметров тренировки не совпадает')
-        else:
-            return training[0](*data)
+        raise ValueError(TRAINING_TYPE.format(workout_type))
+    training, values = DATA[workout_type]
+    if values != len(data):
+        raise TypeError(NUM_VALUES.format(workout_type, len(data), values))
+    return training(*data)
 
 
 def main(training: Training) -> None:
